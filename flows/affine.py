@@ -66,7 +66,7 @@ class AffineHalfFlow(nn.Module):
     - NICE only shifts
     """
 
-    def __init__(self, dim, hidden_dim=24, scale=True, shift=True, base_network=MLP, **base_network_kwargs):
+    def __init__(self, dim, scale=True, shift=True, base_network=MLP, **base_network_kwargs):
         super().__init__()
         self.dim = dim
         self.s_cond = lambda x, context: x.new_zeros(x.size(0), self.dim // 2, device=x.device)
@@ -74,12 +74,10 @@ class AffineHalfFlow(nn.Module):
         if scale:
             self.s_cond = base_network(self.dim // 2,
                                        self.dim // 2,
-                                       hidden_dim,
                                        **base_network_kwargs)
         if shift:
             self.t_cond = base_network(self.dim - (self.dim // 2),
                                        self.dim - (self.dim // 2),
-                                       hidden_dim,
                                        **base_network_kwargs)
 
     def forward(self, x, context=None):
@@ -104,13 +102,12 @@ class AffineHalfFlow(nn.Module):
 class MAF(nn.Module):
     """ Masked Autoregressive Flow that uses a MADE-style network for fast forward """
 
-    def __init__(self, dim, base_network=ARMLP, hidden_dim=24, **base_network_kwargs):
+    def __init__(self, dim, base_network=ARMLP, **base_network_kwargs):
         super().__init__()
         self.register_buffer('placeholder', torch.randn(1))
         self.dim = dim
         self.net = base_network(dim,
                                 dim * 2,
-                                hidden_dim,
                                 **base_network_kwargs)
 
     def forward(self, x, context=None):

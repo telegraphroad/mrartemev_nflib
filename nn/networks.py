@@ -10,7 +10,7 @@ from .networks_utils import ResidualBlock, get_mask, MaskedLinear
 class MLP(nn.Module):
     """ a simple 4-layer MLP """
 
-    def __init__(self, in_features, out_features, hidden_features, depth, context=False):
+    def __init__(self, in_features, out_features, hidden_features=32, depth=4, context=False):
         """ context  - int, False or zero if None"""
         super().__init__()
         self.net = []
@@ -29,7 +29,7 @@ class MLP(nn.Module):
 
 
 class ARMLP(nn.Module):
-    def __init__(self, in_features, out_features, hidden_features, depth, context=False):
+    def __init__(self, in_features, out_features, hidden_features=32, depth=4, context=False):
         """
         nin: integer; number of inputs
         hidden sizes: a list of integers; number of units in hidden layers
@@ -69,7 +69,7 @@ class ARMLP(nn.Module):
 class ResidualNet(nn.Module):
     """A general-purpose residual network. Works only with 1-dim inputs."""
 
-    def __init__(self, in_features, out_features, hidden_features, depth, context=False):
+    def __init__(self, in_features, out_features, hidden_features=32, depth=4, context=False):
         super().__init__()
         self.initial_layer = nn.Sequential(
             nn.Linear(in_features + int(context), hidden_features),

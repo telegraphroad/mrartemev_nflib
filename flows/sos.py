@@ -23,7 +23,7 @@ class SOSFlow(nn.Module):
     todo add explanation
     """
 
-    def __init__(self, dim, k=2, r=2, base_network=ARMLP, hidden_size=24, **base_network_kwargs):
+    def __init__(self, dim, k=2, r=2, base_network=ARMLP, **base_network_kwargs):
         """
         Args:
             dim: input shape
@@ -35,7 +35,7 @@ class SOSFlow(nn.Module):
         self.dim = dim
         self.k = k
         self.m = r + 1
-        self.net = base_network(dim, self.k * self.m * self.dim + self.dim, hidden_size, **base_network_kwargs)
+        self.net = base_network(dim, self.k * self.m * self.dim + self.dim, **base_network_kwargs)
         self.register_buffer('placeholder', torch.randn(1))
 
         n = torch.arange(self.m).unsqueeze(1)

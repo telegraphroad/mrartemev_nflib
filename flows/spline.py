@@ -20,7 +20,7 @@ DEFAULT_MIN_DERIVATIVE = 1e-4
 class NSF_AR(nn.Module):
     """ Neural spline flow, coupling layer, [Durkan et al. 2019] """
 
-    def __init__(self, dim, K=5, B=3, hidden_dim=8, base_network=MLP, **base_network_kwargs):
+    def __init__(self, dim, K=5, B=3, base_network=MLP, **base_network_kwargs):
         """
         K - bins, each with different Rational-Quadratic Function.
         B - Defines interval [-B, B] on that K bins will be split
@@ -32,7 +32,7 @@ class NSF_AR(nn.Module):
         self.init_param = nn.Parameter(torch.zeros(3 * K - 1), requires_grad=True)
         torch.nn.init.uniform_(self.init_param, - 0.5, 0.5)
         self.layers = nn.ModuleList([
-            base_network(i, 3 * K - 1, hidden_dim, **base_network_kwargs)
+            base_network(i, 3 * K - 1, **base_network_kwargs)
             for i in range(1, dim)
         ])
         self.register_buffer('placeholder', torch.randn(1))
@@ -77,7 +77,7 @@ class NSF_CL(nn.Module):
     """ Currently not ready"""
     """ ToDo: context, mask mismatch, shapes """
 
-    def __init__(self, dim, K=5, B=3, hidden_dim=8, base_network=MLP):
+    def __init__(self, dim, K=5, B=3, base_network=MLP, **base_network_kwargs):
         """
         K - bins, each with different Rational-Quadratic Function.
         B - Defines interval [-B, B] on that K bins will be split
@@ -86,8 +86,8 @@ class NSF_CL(nn.Module):
         self.dim = dim
         self.K = K
         self.B = B
-        self.f1 = base_network(dim // 2, (3 * K - 1) * (dim // 2), hidden_dim)
-        self.f2 = base_network(dim - (dim // 2), (3 * K - 1) * (dim - (dim // 2)), hidden_dim)
+        self.f1 = base_network(dim // 2, (3 * K - 1) * (dim // 2), **base_network_kwargs)
+        self.f2 = base_network(dim - (dim // 2), (3 * K - 1) * (dim - (dim // 2)), **base_network_kwargs)
         self.register_buffer('placeholder', torch.randn(1))
 
     def forward(self, x, context=None):
