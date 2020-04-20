@@ -41,7 +41,7 @@ class ARMLP(nn.Module):
         """
 
         super().__init__()
-        assert self.nout % self.nin == 0, "nout must be integer multiple of nin"
+        assert out_features % in_features == 0, "nout must be integer multiple of nin"
 
         input_mask = get_mask(in_features, hidden_features, in_features, mask_type='input')
         hidden_mask = get_mask(hidden_features, hidden_features, in_features)
