@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from nflib.nn.networks import MLP
+from ..nn.networks import MLP
 
 DEFAULT_MIN_BIN_WIDTH = 1e-4
 DEFAULT_MIN_BIN_HEIGHT = 1e-4

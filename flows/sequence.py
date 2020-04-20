@@ -21,31 +21,6 @@ class InvertiblePermutation(nn.Module):
         return z[:, self.inv_perm], 0
 
 
-class NormalizingFlow(nn.Module):
-    """ A sequence of Normalizing Flows is a Normalizing Flow """
-
-    def __init__(self, flows):
-        super().__init__()
-        self.register_buffer('placeholder', torch.randn(1))
-        self.flows = nn.ModuleList(flows)
-
-    def forward(self, x, context=None):
-        m, _ = x.shape
-        log_det = torch.zeros(m, device=self.placeholder.device)
-        for flow in self.flows:
-            x, ld = flow.forward(x, context=context)
-            log_det += ld
-        return x, log_det
-
-    def inverse(self, z, context=None):
-        m, _ = z.shape
-        log_det = torch.zeros(m, device=self.placeholder.device)
-        for flow in self.flows[::-1]:
-            z, ld = flow.inverse(z, context=context)
-            log_det += ld
-        return z, log_det
-
-
 class NormalizingFlowModel(nn.Module):
     """ A Normalizing Flow Model is a (prior, flow) pair """
 

@@ -15,7 +15,7 @@ import logging
 import torch
 from torch import nn
 
-from nflib.flows.affine import AffineConstantFlow
+from .affine import AffineConstantFlow
 
 logger = logging.getLogger('main.nflib.flows.GlowFlows')
 

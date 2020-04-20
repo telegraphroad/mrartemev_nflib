@@ -4,8 +4,7 @@ Predefined Networks
 
 import torch
 from torch import nn
-
-from nflib.nn.networks_utils import ResidualBlock, get_mask, MaskedLinear
+from .networks_utils import ResidualBlock, get_mask, MaskedLinear
 
 
 class MLP(nn.Module):

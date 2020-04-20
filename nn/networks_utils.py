@@ -6,7 +6,6 @@ Implements a Masked Autoregressive MLP, where carefully constructed
 binary masks over weights ensure the autoregressive property.
 """
 
-import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn

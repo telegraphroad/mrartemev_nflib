@@ -13,7 +13,7 @@ import logging
 import torch
 from torch import nn
 
-from nflib.nn.networks import ARMLP, MLP
+from ..nn.networks import ARMLP, MLP
 
 logger = logging.getLogger('main.nflib.flows.SOSFlows')
 
