@@ -13,8 +13,6 @@ import logging
 import torch
 from torch import nn
 
-from ..nn.networks import ARMLP, MLP
-
 logger = logging.getLogger('main.nflib.flows.SOSFlows')
 
 
@@ -23,7 +21,7 @@ class SOSFlow(nn.Module):
     todo add explanation
     """
 
-    def __init__(self, dim, k=2, r=2, base_network=ARMLP, **base_network_kwargs):
+    def __init__(self, dim, base_network, k=2, r=2, **base_network_kwargs):
         """
         Args:
             dim: input shape

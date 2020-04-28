@@ -6,40 +6,24 @@ Implements a Masked Autoregressive MLP, where carefully constructed
 binary masks over weights ensure the autoregressive property.
 """
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn
 
 
-def get_mask(in_features, out_features, in_flow_features, mask_type=None):
-    """
-    mask_type: input | None | output
-
-    See Figure 1 for a better illustration:
-    https://arxiv.org/pdf/1502.03509.pdf
-    """
-    if mask_type == 'input':
-        in_degrees = torch.arange(in_features) % in_flow_features
-    else:
-        in_degrees = torch.arange(in_features) % (in_flow_features - 1)
-
-    if mask_type == 'output':
-        out_degrees = torch.arange(out_features) % in_flow_features - 1
-    else:
-        out_degrees = torch.arange(out_features) % (in_flow_features - 1)
-
-    return (out_degrees.unsqueeze(-1) >= in_degrees.unsqueeze(0)).float()
-
-
 class MaskedLinear(nn.Linear):
     """ same as Linear except has a configurable mask on the weights """
 
-    def __init__(self, in_features, out_features, mask, bias=True):
+    def __init__(self, in_features, out_features, bias=True):
         super().__init__(in_features, out_features, bias)
-        self.register_buffer('mask', mask)
+        self.register_buffer('mask', torch.zeros(out_features, in_features))
 
     def forward(self, input):
         return F.linear(input, self.mask * self.weight, self.bias)
+
+    def set_mask(self, mask):
+        self.mask.data.copy_(torch.from_numpy(mask.astype(np.uint8).T))
 
 
 class ResidualBlock(nn.Module):
