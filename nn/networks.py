@@ -77,19 +77,18 @@ class ARMLP(nn.Module):
         self.update_masks()  # builds the initial self.m connectivity
 
     def update_masks(self):
-        L = self.depth + 1
 
         # fetch the next seed and construct a random stream
         rng = np.random.RandomState(self.seed)
 
         # sample the order of the inputs and the connectivity of all neurons
         self.m[-1] = np.arange(self.in_features)
-        for l in range(L):
+        for l in range(self.depth):
             self.m[l] = rng.randint(self.m[l - 1].min(), self.in_features - 1, size=self.hidden_features)
 
         # construct the mask matrices
-        masks = [self.m[l - 1][:, None] <= self.m[l][None, :] for l in range(L)]
-        masks.append(self.m[L - 1][:, None] < self.m[-1][None, :])
+        masks = [self.m[l - 1][:, None] <= self.m[l][None, :] for l in range(self.depth)]
+        masks.append(self.m[self.depth - 1][:, None] < self.m[-1][None, :])
 
         # handle the case where nout = nin * k, for integer k > 1
         if self.out_features > self.in_features:
