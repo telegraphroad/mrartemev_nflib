@@ -108,11 +108,13 @@ class MAF(nn.Module):
         self.net = base_network(dim,
                                 dim * 2,
                                 **base_network_kwargs)
-
+        
     def forward(self, x, context=None):
         # here we see that we are evaluating all of z in parallel, so density estimation will be fast
         st = self.net(x, context=context)
         s, t = st.split(self.dim, dim=1)
+        # clamped 
+        t = torch.clamp(t, -6, 6)
         z = (x - s) * torch.exp(-t)
         return z, -t.sum(dim=1)
 
@@ -123,6 +125,7 @@ class MAF(nn.Module):
         for i in range(self.dim):
             st = self.net(x.clone(), context=context)  # clone to avoid in-place op errors if using IAF
             s, t = st.split(self.dim, dim=1)
+            t = torch.clamp(t, -6, 6)
             x[:, i] = z[:, i] * torch.exp(t[:, i]) + s[:, i]
         return x, t.sum(dim=1)
 
