@@ -16,10 +16,11 @@ class MLP(nn.Module):
         super().__init__()
         self.net = []
         self.net.append(nn.Linear(in_features + int(context), hidden_features))
-        self.net.append(nn.LeakyReLU(0.01))
+        self.net.append(nn.ReLU())
         for _ in range(depth):
             self.net.append(nn.Linear(hidden_features, hidden_features))
-            self.net.append(nn.LeakyReLU(0.01))
+            self.net.append(nn.ReLU())
+        self.net[-1] = nn.Tanh()
         self.net.append(nn.Linear(hidden_features, out_features))
         self.net = nn.Sequential(*self.net)
 
@@ -58,6 +59,7 @@ class ARMLP(nn.Module):
                     nn.ReLU(),
                 ])
         self.net.pop() # pop the last ReLU for the output layer
+        self.net[-2] = nn.Tanh()
         self.net = nn.Sequential(*self.net)
 
         # self.net.append(MaskedLinear(in_features, hidden_features))
@@ -116,7 +118,7 @@ class ResidualNet(nn.Module):
         self.initial_layer = nn.Sequential(
             nn.Linear(in_features + int(context), hidden_features),
             nn.BatchNorm1d(hidden_features, eps=1e-3),
-            nn.LeakyReLU(0.01)
+            nn.ReLU()
         )
         self.blocks = nn.ModuleList([
             ResidualBlock(
@@ -132,5 +134,6 @@ class ResidualNet(nn.Module):
         x = self.initial_layer(x)
         for block in self.blocks:
             x = block(x, context=context)
+        x = nn.Tanh()(x)
         outputs = self.final_layer(x)
         return outputs

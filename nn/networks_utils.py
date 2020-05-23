@@ -34,11 +34,11 @@ class ResidualBlock(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(features + int(context), features),
             nn.BatchNorm1d(features, eps=1e-3),
-            nn.LeakyReLU(0.01),
+            nn.ReLU(),
             nn.Dropout(p=0.3),
             nn.Linear(features, features),
             nn.BatchNorm1d(features, eps=1e-3),
-            nn.LeakyReLU(0.01),
+            nn.ReLU(),
         )
 
     def forward(self, x, context=None):
