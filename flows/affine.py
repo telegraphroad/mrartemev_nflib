@@ -71,12 +71,12 @@ class AffineHalfFlow(nn.Module):
         self.s_cond = lambda x, context: x.new_zeros(x.size(0), self.dim // 2, device=x.device)
         self.t_cond = lambda x, context: x.new_zeros(x.size(0), self.dim // 2, device=x.device)
         if scale:
-            self.s_cond = base_network(self.dim // 2,
+            self.s_cond = base_network(self.dim - (self.dim // 2),
                                        self.dim // 2,
                                        **base_network_kwargs)
         if shift:
             self.t_cond = base_network(self.dim - (self.dim // 2),
-                                       self.dim - (self.dim // 2),
+                                       self.dim // 2,
                                        **base_network_kwargs)
 
     def forward(self, x, context=None):
