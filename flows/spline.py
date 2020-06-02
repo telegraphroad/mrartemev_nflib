@@ -10,8 +10,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..nn.networks import MLP
-
 DEFAULT_MIN_BIN_WIDTH = 1e-4
 DEFAULT_MIN_BIN_HEIGHT = 1e-4
 DEFAULT_MIN_DERIVATIVE = 1e-4
@@ -20,7 +18,7 @@ DEFAULT_MIN_DERIVATIVE = 1e-4
 class NSF_AR(nn.Module):
     """ Neural spline flow, coupling layer, [Durkan et al. 2019] """
 
-    def __init__(self, dim, K=5, B=3, base_network=MLP, **base_network_kwargs):
+    def __init__(self, dim, base_network, K=5, B=3, **base_network_kwargs):
         """
         K - bins, each with different Rational-Quadratic Function.
         B - Defines interval [-B, B] on that K bins will be split
@@ -77,7 +75,7 @@ class NSF_CL(nn.Module):
     """ Currently not ready"""
     """ ToDo: context, mask mismatch, shapes """
 
-    def __init__(self, dim, K=5, B=3, base_network=MLP, **base_network_kwargs):
+    def __init__(self, dim, base_network, K=5, B=3, **base_network_kwargs):
         """
         K - bins, each with different Rational-Quadratic Function.
         B - Defines interval [-B, B] on that K bins will be split

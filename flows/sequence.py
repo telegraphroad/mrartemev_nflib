@@ -11,8 +11,8 @@ class InvertiblePermutation(nn.Module):
     # @robdrynkin
     def __init__(self, dim):
         super().__init__()
-        self.perm = np.random.permutation(dim)
-        self.inv_perm = np.argsort(self.perm)
+        self.perm = nn.Parameter(torch.randperm(dim), requires_grad=False)
+        self.inv_perm = nn.Parameter(torch.argsort(self.perm), requires_grad=False)
 
     def forward(self, x, context=None):
         return x[:, self.perm], 0

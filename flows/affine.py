@@ -23,7 +23,6 @@ https://arxiv.org/abs/1705.07057
 import logging
 import torch
 from torch import nn
-from ..nn.networks import ARMLP, MLP
 
 logger = logging.getLogger('main.nflib.flows.AffineFlows')
 
@@ -105,32 +104,33 @@ class AffineHalfFlow(nn.Module):
 class MAF(nn.Module):
     """ Masked Autoregressive Flow that uses a MADE-style network for fast forward """
 
-    def __init__(self, dim, base_network=ARMLP, **base_network_kwargs):
+    def __init__(self, dim, base_network, **base_network_kwargs):
         super().__init__()
         self.register_buffer('placeholder', torch.randn(1))
         self.dim = dim
         self.net = base_network(dim,
                                 dim * 2,
                                 **base_network_kwargs)
-
+        
     def forward(self, x, context=None):
         # here we see that we are evaluating all of z in parallel, so density estimation will be fast
         st = self.net(x, context=context)
         s, t = st.split(self.dim, dim=1)
-        z = x * torch.exp(s) + t
-        log_det = torch.sum(s, dim=1)
-        return z, log_det
+        # clamped 
+        t = torch.clamp(t, -6, 6)
+        z = (x - s) * torch.exp(-t)
+        return z, -t.sum(dim=1)
 
     def inverse(self, z, context=None):
         # we have to decode the x one at a time, sequentially
         x = torch.zeros_like(z)
-        log_det = torch.zeros(z.shape[0], device=self.placeholder.device)
+        # log_det = torch.zeros(z.shape[0], device=self.placeholder.device)
         for i in range(self.dim):
             st = self.net(x.clone(), context=context)  # clone to avoid in-place op errors if using IAF
             s, t = st.split(self.dim, dim=1)
-            x[:, i] = (z[:, i] - t[:, i]) * torch.exp(-s[:, i])
-            log_det += -s[:, i]
-        return x, log_det
+            t = torch.clamp(t, -6, 6)
+            x[:, i] = z[:, i] * torch.exp(t[:, i]) + s[:, i]
+        return x, t.sum(dim=1)
 
 
 class IAF(MAF):
