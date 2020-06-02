@@ -66,18 +66,18 @@ class AffineHalfFlow(nn.Module):
     - NICE only shifts
     """
 
-    def __init__(self, dim, scale=True, shift=True, base_network=MLP, **base_network_kwargs):
+    def __init__(self, dim, base_network, scale=True, shift=True, **base_network_kwargs):
         super().__init__()
         self.dim = dim
         self.s_cond = lambda x, context: x.new_zeros(x.size(0), self.dim // 2, device=x.device)
         self.t_cond = lambda x, context: x.new_zeros(x.size(0), self.dim // 2, device=x.device)
         if scale:
-            self.s_cond = base_network(self.dim // 2,
+            self.s_cond = base_network(self.dim - (self.dim // 2),
                                        self.dim // 2,
                                        **base_network_kwargs)
         if shift:
             self.t_cond = base_network(self.dim - (self.dim // 2),
-                                       self.dim - (self.dim // 2),
+                                       self.dim // 2,
                                        **base_network_kwargs)
 
     def forward(self, x, context=None):
@@ -90,11 +90,14 @@ class AffineHalfFlow(nn.Module):
         return z, log_det
 
     def inverse(self, z, context=None):
-        z0, z1 = z[:, ::2], z[:, 1::2]
+        k = z.shape[1] // 2 + z.shape[1] % 2
+        z0, z1 = z[:, :k], z[:, k:]
         s = self.s_cond(z0, context)
         t = self.t_cond(z0, context)
         x1 = (z1 - t) * torch.exp(-s)  # reverse the transform on this half
-        x = torch.cat([z0, x1], dim=1)
+        x = torch.empty_like(z)
+        x[:, ::2] = z0
+        x[:, 1::2] = x1
         log_det = torch.sum(-s, dim=1)
         return x, log_det
 
