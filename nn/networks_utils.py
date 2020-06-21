@@ -12,6 +12,66 @@ import torch.nn.functional as F
 from torch import nn
 
 
+class NoneLayer(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, x):
+        return x
+
+
+class MLPBlock(nn.Module):
+    def __init__(self, in_features, out_features, depth=1,
+                 activation=nn.ReLU, batchnorm=nn.BatchNorm1d, context_dim=0):
+        super().__init__()
+        self.block = [
+            nn.Linear(in_features + context_dim, out_features),
+            activation(),
+            batchnorm(out_features)
+        ]
+        for i in range(1, depth):
+            self.block.append([
+                nn.Linear(out_features, out_features),
+                activation(),
+                batchnorm(out_features)
+            ])
+        self.block = nn.Sequential(*self.block)
+
+    def forward(self, x, context=None):
+        if context is not None:
+            return self.block(torch.cat([x, context], dim=1))
+        return self.block(x)
+
+
+class ARMLPBlock(nn.Module):
+    def __init__(self, in_features, out_features, depth=1,
+                 activation=nn.ReLU, batchnorm=nn.BatchNorm1d, context_dim=0):
+        super().__init__()
+        self.block = [
+            MaskedLinear(in_features, out_features),
+            activation(),
+            batchnorm(out_features)
+        ]
+        for i in range(1, depth):
+            self.block.append([
+                MaskedLinear(out_features, out_features),
+                activation(),
+                batchnorm(out_features)
+            ])
+        self.block = nn.Sequential(*self.block)
+
+        if context_dim > 0:
+            self.context_block = MLPBlock(
+                context_dim, out_features, depth=depth,
+                activation=activation, batchnorm=batchnorm, context_dim=0
+            )
+
+    def forward(self, x, context=None):
+        if context is not None:
+            return self.context_block(context) * self.block(x)
+        return self.block(x)
+
+
 class MaskedLinear(nn.Linear):
     """ same as Linear except has a configurable mask on the weights """
 
@@ -24,24 +84,3 @@ class MaskedLinear(nn.Linear):
 
     def set_mask(self, mask):
         self.mask.data.copy_(torch.from_numpy(mask.astype(np.uint8).T))
-
-
-class ResidualBlock(nn.Module):
-    """A general-purpose residual block. Works only with 1-dim inputs."""
-
-    def __init__(self, features, context=False):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(features + int(context), features),
-            nn.BatchNorm1d(features, eps=1e-3),
-            nn.ReLU(),
-            nn.Dropout(p=0.3),
-            nn.Linear(features, features),
-            nn.BatchNorm1d(features, eps=1e-3),
-            nn.ReLU(),
-        )
-
-    def forward(self, x, context=None):
-        if context is not None:
-            return self.net(torch.cat([x, context], dim=1)) + x
-        return self.net(x) + x

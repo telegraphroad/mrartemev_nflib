@@ -27,24 +27,18 @@ class NSF_AR(nn.Module):
         self.dim = dim
         self.K = K
         self.B = B
-        self.init_param = nn.Parameter(torch.zeros(3 * K - 1), requires_grad=True)
-        torch.nn.init.uniform_(self.init_param, - 0.5, 0.5)
-        self.layers = nn.ModuleList([
-            base_network(i, 3 * K - 1, **base_network_kwargs)
-            for i in range(1, dim)
-        ])
+        self.net = base_network(dim,
+                                dim * (3 * K - 1),
+                                **base_network_kwargs)
         self.register_buffer('placeholder', torch.randn(1))
 
     def forward(self, x, context=None):
         z = torch.zeros_like(x)
         log_det = torch.zeros(z.shape[0], device=self.placeholder.device)
+        out = self.net(x, context=context).view(x.shape[0], 3 * self.K - 1, self.dim)
+
         for i in range(self.dim):
-            if i == 0:
-                init_param = self.init_param.expand(x.shape[0], 3 * self.K - 1)
-                W, H, D = torch.split(init_param, self.K, dim=1)
-            else:
-                out = self.layers[i - 1](x[:, :i], context=context)
-                W, H, D = torch.split(out, self.K, dim=1)
+            W, H, D = torch.split(out[..., i], self.K, dim=1)
             W, H = torch.softmax(W, dim=1), torch.softmax(H, dim=1)
             W, H = 2 * self.B * W, 2 * self.B * H
             D = F.softplus(D)
@@ -56,76 +50,14 @@ class NSF_AR(nn.Module):
         x = torch.zeros_like(z)
         log_det = torch.zeros(x.shape[0], device=self.placeholder.device)
         for i in range(self.dim):
-            if i == 0:
-                init_param = self.init_param.expand(x.shape[0], 3 * self.K - 1)
-                W, H, D = torch.split(init_param, self.K, dim=1)
-            else:
-                out = self.layers[i - 1](x[:, :i], context=context)
-                W, H, D = torch.split(out, self.K, dim=1)
+            out = self.net(x, context=context).view(x.shape[0], 3 * self.K - 1, self.dim)
+            W, H, D = torch.split(out[..., i], self.K, dim=1)
             W, H = torch.softmax(W, dim=1), torch.softmax(H, dim=1)
             W, H = 2 * self.B * W, 2 * self.B * H
             D = F.softplus(D)
             x[:, i], ld = unconstrained_RQS(z[:, i], W, H, D, inverse=True, tail_bound=self.B)
             log_det += ld
         return x, log_det
-
-
-class NSF_CL(nn.Module):
-    """ Neural spline flow, coupling layer, [Durkan et al. 2019] """
-    """ Currently not ready"""
-    """ ToDo: context, mask mismatch, shapes """
-
-    def __init__(self, dim, base_network, K=5, B=3, **base_network_kwargs):
-        """
-        K - bins, each with different Rational-Quadratic Function.
-        B - Defines interval [-B, B] on that K bins will be split
-        """
-        super().__init__()
-        self.dim = dim
-        self.K = K
-        self.B = B
-        self.f1 = base_network(dim // 2, (3 * K - 1) * (dim // 2), **base_network_kwargs)
-        self.f2 = base_network(dim - (dim // 2), (3 * K - 1) * (dim - (dim // 2)), **base_network_kwargs)
-        self.register_buffer('placeholder', torch.randn(1))
-
-    def forward(self, x, context=None):
-        log_det = torch.zeros(x.shape[0], device=self.placeholder.device)
-        lower, upper = x[:, :self.dim // 2], x[:, self.dim // 2:]
-        out = self.f1(lower, context=context).reshape(-1, self.dim // 2, 3 * self.K - 1)
-        W, H, D = torch.split(out, self.K, dim=2)
-        W, H = torch.softmax(W, dim=2), torch.softmax(H, dim=2)
-        W, H = 2 * self.B * W, 2 * self.B * H
-        D = F.softplus(D)
-        upper, ld = unconstrained_RQS(upper, W, H, D, inverse=False, tail_bound=self.B)
-        log_det += torch.sum(ld, dim=1)
-
-        out = self.f2(upper, context=context).reshape(-1, (self.dim - (self.dim // 2)), 3 * self.K - 1)
-        W, H, D = torch.split(out, self.K, dim=2)
-        W, H = torch.softmax(W, dim=2), torch.softmax(H, dim=2)
-        W, H = 2 * self.B * W, 2 * self.B * H
-        D = F.softplus(D)
-        lower, ld = unconstrained_RQS(lower, W, H, D, inverse=False, tail_bound=self.B)
-        log_det += torch.sum(ld, dim=1)
-        return torch.cat([lower, upper], dim=1), log_det
-
-    def inverse(self, z, context=None):
-        log_det = torch.zeros(z.shape[0], device=self.placeholder.device)
-        lower, upper = z[:, :self.dim // 2], z[:, self.dim // 2:]
-        out = self.f2(upper, context=context).reshape(-1, (self.dim - (self.dim // 2)), 3 * self.K - 1)
-        W, H, D = torch.split(out, self.K, dim=2)
-        W, H = torch.softmax(W, dim=2), torch.softmax(H, dim=2)
-        W, H = 2 * self.B * W, 2 * self.B * H
-        D = F.softplus(D)
-        lower, ld = unconstrained_RQS(lower, W, H, D, inverse=True, tail_bound=self.B)
-        log_det += torch.sum(ld, dim=1)
-        out = self.f1(lower, context=context).reshape(-1, self.dim // 2, 3 * self.K - 1)
-        W, H, D = torch.split(out, self.K, dim=2)
-        W, H = torch.softmax(W, dim=2), torch.softmax(H, dim=2)
-        W, H = 2 * self.B * W, 2 * self.B * H
-        D = F.softplus(D)
-        upper, ld = unconstrained_RQS(upper, W, H, D, inverse=True, tail_bound=self.B)
-        log_det += torch.sum(ld, dim=1)
-        return torch.cat([lower, upper], dim=1), log_det
 
 
 def searchsorted(bin_locations, inputs, eps=1e-6):
@@ -168,6 +100,7 @@ def unconstrained_RQS(inputs, unnormalized_widths, unnormalized_heights,
     )
     return outputs, logabsdet
 
+
 def RQS(inputs, unnormalized_widths, unnormalized_heights,
         unnormalized_derivatives, inverse=False, left=0., right=1.,
         bottom=0., top=1., min_bin_width=DEFAULT_MIN_BIN_WIDTH,
@@ -183,7 +116,7 @@ def RQS(inputs, unnormalized_widths, unnormalized_heights,
     if min_bin_height * num_bins > 1.0:
         raise ValueError('Minimal bin height too large for the number of bins')
 
-    widths = F.softmax(unnormalized_widths, dim=-1) # softmax???
+    widths = F.softmax(unnormalized_widths, dim=-1)  # softmax???
     widths = min_bin_width + (1 - min_bin_width * num_bins) * widths
     cumwidths = torch.cumsum(widths, dim=-1)
     cumwidths = F.pad(cumwidths, pad=(1, 0), mode='constant', value=0.0)
@@ -222,12 +155,12 @@ def RQS(inputs, unnormalized_widths, unnormalized_heights,
     input_heights = heights.gather(-1, bin_idx)[..., 0]
 
     if inverse:
-        a = (((inputs - input_cumheights) * (input_derivatives \
-            + input_derivatives_plus_one - 2 * input_delta) \
-            + input_heights * (input_delta - input_derivatives)))
-        b = (input_heights * input_derivatives - (inputs - input_cumheights) \
-            * (input_derivatives + input_derivatives_plus_one \
-            - 2 * input_delta))
+        a = (((inputs - input_cumheights) * (input_derivatives
+                                             + input_derivatives_plus_one - 2 * input_delta)
+              + input_heights * (input_delta - input_derivatives)))
+        b = (input_heights * input_derivatives - (inputs - input_cumheights)
+             * (input_derivatives + input_derivatives_plus_one
+                - 2 * input_delta))
         c = - input_delta * (inputs - input_cumheights)
 
         discriminant = b.pow(2) - 4 * a * c
@@ -238,28 +171,28 @@ def RQS(inputs, unnormalized_widths, unnormalized_heights,
 
         theta_one_minus_theta = root * (1 - root)
         denominator = input_delta \
-                      + ((input_derivatives + input_derivatives_plus_one \
-                      - 2 * input_delta) * theta_one_minus_theta)
+                      + ((input_derivatives + input_derivatives_plus_one
+                          - 2 * input_delta) * theta_one_minus_theta)
         derivative_numerator = input_delta.pow(2) \
-                               * (input_derivatives_plus_one * root.pow(2) \
-                                + 2 * input_delta * theta_one_minus_theta \
-                                + input_derivatives * (1 - root).pow(2))
+                               * (input_derivatives_plus_one * root.pow(2)
+                                  + 2 * input_delta * theta_one_minus_theta
+                                  + input_derivatives * (1 - root).pow(2))
         logabsdet = torch.log(derivative_numerator) - 2 * torch.log(denominator)
         return outputs, -logabsdet
     else:
         theta = (inputs - input_cumwidths) / input_bin_widths
         theta_one_minus_theta = theta * (1 - theta)
 
-        numerator = input_heights * (input_delta * theta.pow(2) \
-                    + input_derivatives * theta_one_minus_theta)
-        denominator = input_delta + ((input_derivatives \
-                      + input_derivatives_plus_one - 2 * input_delta) \
-                      * theta_one_minus_theta)
+        numerator = input_heights * (input_delta * theta.pow(2)
+                                     + input_derivatives * theta_one_minus_theta)
+        denominator = input_delta + ((input_derivatives
+                                      + input_derivatives_plus_one - 2 * input_delta)
+                                     * theta_one_minus_theta)
         outputs = input_cumheights + numerator / denominator
 
         derivative_numerator = input_delta.pow(2) \
-                               * (input_derivatives_plus_one * theta.pow(2) \
-                                + 2 * input_delta * theta_one_minus_theta \
-                                + input_derivatives * (1 - theta).pow(2))
+                               * (input_derivatives_plus_one * theta.pow(2)
+                                  + 2 * input_delta * theta_one_minus_theta
+                                  + input_derivatives * (1 - theta).pow(2))
         logabsdet = torch.log(derivative_numerator) - 2 * torch.log(denominator)
         return outputs, logabsdet

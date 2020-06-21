@@ -114,23 +114,21 @@ class MAF(nn.Module):
         
     def forward(self, x, context=None):
         # here we see that we are evaluating all of z in parallel, so density estimation will be fast
-        st = self.net(x, context=context)
+        st = self.net(x.clone(), context=context)
         s, t = st.split(self.dim, dim=1)
-        # clamped 
         t = torch.clamp(t, -6, 6)
-        z = (x - s) * torch.exp(-t)
-        return z, -t.sum(dim=1)
+        z = x * torch.exp(t) + s
+        return z, t.sum(dim=1)
 
     def inverse(self, z, context=None):
         # we have to decode the x one at a time, sequentially
         x = torch.zeros_like(z)
-        # log_det = torch.zeros(z.shape[0], device=self.placeholder.device)
         for i in range(self.dim):
             st = self.net(x.clone(), context=context)  # clone to avoid in-place op errors if using IAF
             s, t = st.split(self.dim, dim=1)
             t = torch.clamp(t, -6, 6)
-            x[:, i] = z[:, i] * torch.exp(t[:, i]) + s[:, i]
-        return x, t.sum(dim=1)
+            x[:, i] = (z[:, i] - s[:, i]) * torch.exp(-t[:, i])
+        return x, -t.sum(dim=1)
 
 
 class IAF(MAF):

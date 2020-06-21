@@ -1,1 +1,1 @@
-from .networks import MLP, ARMLP, ResidualNet
+from .networks import MLP, ARMLP

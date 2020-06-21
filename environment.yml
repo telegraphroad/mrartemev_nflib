@@ -1,0 +1,16 @@
+name: example_nflib
+channels:
+  - pytorch
+  - defaults
+dependencies:
+  - python=3.6
+  - pytorch=1.5
+  - tqdm
+  - matplotlib
+  - numpy
+  - scikit-learn
+  - jupyter
+prefix: /home/user/anaconda3/envs/example_nflib
+
+
+# assert cuda
