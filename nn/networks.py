@@ -1,7 +1,6 @@
 """
 Predefined Networks
 """
-
 import numpy as np
 import torch
 from torch import nn
@@ -77,7 +76,6 @@ class ARMLP(nn.Module):
                                                    size=self.hidden_features)
                     sublayer_mask = m_dict[mask_num - 1][:, None] <= m_dict[mask_num][None, :]
                     mask_num += 1
-                    print(sublayer.mask.shape, sublayer_mask.T.shape)
                     if sublayer.mask.shape == sublayer_mask.T.shape:
                         sublayer.set_mask(sublayer_mask)
                     last_sublayer = sublayer

@@ -2,6 +2,7 @@ name: example_nflib
 channels:
   - pytorch
   - defaults
+  - comet_ml
 dependencies:
   - python=3.6
   - pytorch=1.5
@@ -10,6 +11,8 @@ dependencies:
   - numpy
   - scikit-learn
   - jupyter
+  - pip:
+      - comet_ml
 prefix: /home/user/anaconda3/envs/example_nflib
 
 
