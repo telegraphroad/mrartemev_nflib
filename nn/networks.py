@@ -13,14 +13,14 @@ class MLP(nn.Module):
     def __init__(self, in_features, out_features, hidden_features=32, depth=4, context_dim=0):
         """ context  - int, None if None"""
         super().__init__()
-        self.net = [MLPBlock(in_features, hidden_features, activation=nn.ELU, context_dim=context_dim)]
+        self.net = [MLPBlock(in_features, hidden_features, activation=nn.ReLU, context_dim=context_dim)]
         for i in range(1, depth):
             if i < depth-2:
                 self.net.append(MLPBlock(hidden_features, hidden_features,
-                                         activation=nn.ELU, context_dim=context_dim))
+                                         activation=nn.ReLU, context_dim=context_dim))
             elif i == depth-2:
                 self.net.append(MLPBlock(hidden_features, hidden_features,
-                                         activation=nn.Tanh, context_dim=context_dim))
+                                         activation=nn.ReLU, context_dim=context_dim))
             elif i == depth-1:
                 self.net.append(MLPBlock(hidden_features, out_features,
                                          activation=NoneLayer, context_dim=context_dim))
@@ -45,10 +45,10 @@ class ARMLP(nn.Module):
         for i in range(1, depth):
             if i < depth-2:
                 self.net.append(ARMLPBlock(hidden_features, hidden_features,
-                                           activation=nn.ELU, context_dim=context_dim))
+                                           activation=nn.ReLU, context_dim=context_dim))
             elif i == depth-2:
                 self.net.append(ARMLPBlock(hidden_features, hidden_features,
-                                           activation=nn.Tanh, context_dim=context_dim))
+                                           activation=nn.ReLU, context_dim=context_dim))
             elif i == depth-1:
                 self.net.append(ARMLPBlock(hidden_features, out_features,
                                            activation=NoneLayer, context_dim=context_dim))
