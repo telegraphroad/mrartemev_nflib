@@ -35,10 +35,11 @@ class NSF_AR(nn.Module):
     def forward(self, x, context=None):
         z = torch.zeros_like(x)
         log_det = torch.zeros(z.shape[0], device=self.placeholder.device)
-        out = self.net(x, context=context).view(x.shape[0], self.dim, 3 * self.K - 1)
-
+        out = self.net(x, context=context)  # .view(x.shape[0], self.dim, 3 * self.K - 1)
+        out = [out[:, i::self.dim] for i in range(self.dim)]
         for i in range(self.dim):
-            W, H, D = torch.split(out[:, i], self.K, dim=1)
+            # W, H, D = torch.split(out[:, i], self.K, dim=1)
+            W, H, D = torch.split(out[i], self.K, dim=1)
             W, H = torch.softmax(W, dim=1), torch.softmax(H, dim=1)
             W, H = 2 * self.B * W, 2 * self.B * H
             D = F.softplus(D)
@@ -50,8 +51,10 @@ class NSF_AR(nn.Module):
         x = torch.zeros_like(z)
         log_det = torch.zeros(x.shape[0], device=self.placeholder.device)
         for i in range(self.dim):
-            out = self.net(x, context=context).view(x.shape[0], self.dim, 3 * self.K - 1)
-            W, H, D = torch.split(out[:, i], self.K, dim=1)
+            out = self.net(x, context=context)# .view(x.shape[0], self.dim, 3 * self.K - 1)
+            out = [out[:, i::self.dim] for i in range(self.dim)]
+            # W, H, D = torch.split(out[:, i], self.K, dim=1)
+            W, H, D = torch.split(out[i], self.K, dim=1)
             W, H = torch.softmax(W, dim=1), torch.softmax(H, dim=1)
             W, H = 2 * self.B * W, 2 * self.B * H
             D = F.softplus(D)

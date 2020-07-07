@@ -8,32 +8,27 @@ from .networks_utils import MLPBlock, ARMLPBlock, NoneLayer, MaskedLinear
 
 
 class MLP(nn.Module):
-    """ a simple 4-layer MLP """
-
-    def __init__(self, in_features, out_features, hidden_features=32, depth=4, context_dim=0):
-        """ context  - int, None if None"""
+    def __init__(self, in_features, out_features, hidden_features=32, depth=5, context_dim=0):
         super().__init__()
-        self.net = [MLPBlock(in_features, hidden_features, activation=nn.ReLU, context_dim=context_dim)]
-        for i in range(1, depth):
-            if i < depth-2:
-                self.net.append(MLPBlock(hidden_features, hidden_features,
-                                         activation=nn.ReLU, context_dim=context_dim))
-            elif i == depth-2:
-                self.net.append(MLPBlock(hidden_features, hidden_features,
-                                         activation=nn.ReLU, context_dim=context_dim))
-            elif i == depth-1:
-                self.net.append(MLPBlock(hidden_features, out_features,
-                                         activation=NoneLayer, context_dim=context_dim))
-        self.net = nn.ModuleList(self.net)
+        self.net = [nn.Linear(in_features + int(context_dim), hidden_features),
+                    nn.BatchNorm1d(hidden_features),
+                    nn.ReLU()]
+        for _ in range(1, depth - 1):
+            self.net.append(nn.Linear(hidden_features, hidden_features))
+            self.net.append(nn.BatchNorm1d(hidden_features))
+            self.net.append(nn.ReLU())
+        self.net[-1] = nn.Tanh()
+        self.net.append(nn.Linear(hidden_features, out_features))
+        self.net = nn.Sequential(*self.net)
 
     def forward(self, x, context=None):
-        for layer in self.net:
-            x = layer(x, context=context)
-        return x
+        if context is not None:
+            return self.net(torch.cat([context, x], dim=1))
+        return self.net(x)
 
 
 class ARMLP(nn.Module):
-    def __init__(self, in_features, out_features, hidden_features=32, depth=4, context_dim=0):
+    def __init__(self, in_features, out_features, hidden_features=32, depth=5, context_dim=0):
         super().__init__()
         assert out_features % in_features == 0, "nout must be integer multiple of nin"
         self.in_features = in_features
@@ -41,18 +36,19 @@ class ARMLP(nn.Module):
         self.hidden_features = hidden_features
         self.depth = depth
 
-        self.net = [ARMLPBlock(in_features, hidden_features, activation=nn.ELU, context_dim=context_dim)]
-        for i in range(1, depth):
-            if i < depth-2:
-                self.net.append(ARMLPBlock(hidden_features, hidden_features,
-                                           activation=nn.ReLU, context_dim=context_dim))
-            elif i == depth-2:
-                self.net.append(ARMLPBlock(hidden_features, hidden_features,
-                                           activation=nn.ReLU, context_dim=context_dim))
-            elif i == depth-1:
-                self.net.append(ARMLPBlock(hidden_features, out_features,
-                                           activation=NoneLayer, context_dim=context_dim))
-        self.net = nn.ModuleList(self.net)
+        self.net = [MaskedLinear(in_features, hidden_features),
+                    nn.BatchNorm1d(hidden_features),
+                    nn.ReLU()]
+        for i in range(1, depth - 1):
+            self.net.append(MaskedLinear(hidden_features, hidden_features))
+            self.net.append(nn.BatchNorm1d(hidden_features))
+            self.net.append(nn.ReLU())
+        self.net[-1] = nn.Tanh()
+        self.net.append(MaskedLinear(hidden_features, out_features))
+
+        self.net = nn.Sequential(*self.net)
+        if context_dim > 0:
+            self.context_net = MLP(context_dim, out_features, hidden_features, depth)
         self.seed = 0  # for cycling through num_masks orderings
         self.update_masks()  # builds the initial m_dict connectivity
 
@@ -62,31 +58,25 @@ class ARMLP(nn.Module):
         rng = np.random.RandomState(self.seed)
 
         # sample the order of the inputs and the connectivity of all neurons
-        m_dict = dict()
-        m_dict[-1] = np.arange(self.in_features)
+        m_dict = {-1: np.arange(self.in_features)}
 
-        # set the masks in all MaskedLinear layers
-        mask_num = 0
-        last_sublayer = None
-        for layer in self.net:
-            for sublayer in layer.block:
-                if isinstance(sublayer, MaskedLinear):
-                    m_dict[mask_num] = rng.randint(m_dict[mask_num - 1].min(),
-                                                   self.in_features - 1,
-                                                   size=self.hidden_features)
-                    sublayer_mask = m_dict[mask_num - 1][:, None] <= m_dict[mask_num][None, :]
-                    mask_num += 1
-                    if sublayer.mask.shape == sublayer_mask.T.shape:
-                        sublayer.set_mask(sublayer_mask)
-                    last_sublayer = sublayer
-        last_mask = m_dict[mask_num - 1][:, None] < m_dict[-1][None, :]
+        for l in range(self.depth):
+            m_dict[l] = rng.randint(m_dict[l - 1].min(), self.in_features - 1, size=self.hidden_features)
+        # construct the mask matrices
+        masks = [m_dict[l - 1][:, None] <= m_dict[l][None, :] for l in range(self.depth-1)]
+        masks.append(m_dict[self.depth - 1][:, None] < m_dict[-1][None, :])
+
+        # handle the case where nout = nin * k, for integer k > 1
         if self.out_features > self.in_features:
             k = self.out_features // self.in_features
             # replicate the mask across the other outputs
-            last_mask = np.concatenate([last_mask] * k, axis=1)
-        last_sublayer.set_mask(last_mask)
+            masks[-1] = np.concatenate([masks[-1]] * k, axis=1)
+
+        layers = [l for l in self.net.modules() if isinstance(l, MaskedLinear)]
+        for ind, (l, m) in enumerate(zip(layers, masks)):
+            l.set_mask(m)
 
     def forward(self, x, context=None):
-        for layer in self.net:
-            x = layer(x, context=context)
-        return x
+        if context is not None:
+            return torch.sigmoid(self.context_net(context)) * self.net(x)
+        return self.net(x)

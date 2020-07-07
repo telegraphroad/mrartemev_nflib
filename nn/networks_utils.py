@@ -21,20 +21,16 @@ class NoneLayer(nn.Module):
 
 
 class MLPBlock(nn.Module):
-    def __init__(self, in_features, out_features, depth=1,
-                 activation=nn.ReLU, batchnorm=nn.BatchNorm1d, context_dim=0):
+    def __init__(self, in_features, out_features,
+                 activation, normalization,
+                 activation_kwargs={}, normalization_kwargs={},
+                 context_dim=0):
         super().__init__()
         self.block = [
             nn.Linear(in_features + context_dim, out_features),
-            activation(),
-            batchnorm(out_features)
+            activation(**activation_kwargs),
+            normalization(**normalization_kwargs)
         ]
-        for i in range(1, depth):
-            self.block.append([
-                nn.Linear(out_features, out_features),
-                activation(),
-                batchnorm(out_features)
-            ])
         self.block = nn.Sequential(*self.block)
 
     def forward(self, x, context=None):
@@ -44,26 +40,23 @@ class MLPBlock(nn.Module):
 
 
 class ARMLPBlock(nn.Module):
-    def __init__(self, in_features, out_features, depth=1,
-                 activation=nn.ReLU, batchnorm=nn.BatchNorm1d, context_dim=0):
+    def __init__(self, in_features, out_features,
+                 activation, normalization,
+                 activation_kwargs={}, normalization_kwargs={},
+                 context_dim=0):
         super().__init__()
         self.block = [
-            MaskedLinear(in_features, out_features),
-            activation(),
-            batchnorm(out_features)
+            MaskedLinear(in_features + context_dim, out_features),
+            activation(**activation_kwargs),
+            normalization(**normalization_kwargs)
         ]
-        for i in range(1, depth):
-            self.block.append([
-                MaskedLinear(out_features, out_features),
-                activation(),
-                batchnorm(out_features)
-            ])
         self.block = nn.Sequential(*self.block)
 
         if context_dim > 0:
             self.context_block = MLPBlock(
-                context_dim, out_features, depth=depth,
-                activation=activation, batchnorm=batchnorm, context_dim=0
+                context_dim, out_features,
+                activation, normalization,
+                activation_kwargs, normalization_kwargs,
             )
 
     def forward(self, x, context=None):
