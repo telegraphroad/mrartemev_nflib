@@ -1,1 +1,1 @@
-from .networks import MLP, ARMLP
+from .networks import MLP, ARMLP, DenseNet
