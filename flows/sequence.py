@@ -29,9 +29,10 @@ class NormalizingFlowModel(nn.Module):
         self.register_buffer('placeholder', torch.randn(1))
         self.prior = prior
         self.flows = nn.ModuleList(flows)
+        self._dim = None
 
     def forward(self, x, context=None):
-        m, _ = x.shape
+        m, self._dim = x.shape
         log_det = torch.zeros(m, device=self.placeholder.device)
         for flow in self.flows:
             x, ld = flow.forward(x, context=context)
@@ -53,6 +54,12 @@ class NormalizingFlowModel(nn.Module):
         return prior_logprob + log_det
 
     def sample(self, num_samples, context=None):
-        z = self.prior.sample((num_samples,)).to(self.placeholder.device)
+        if type(self.prior) == torch.distributions.multivariate_normal.MultivariateNormal:
+          z = self.prior.sample((num_samples,)).to(self.placeholder.device)
+          print('mvn')
+        else:
+          z = self.prior.sample((num_samples,self._dim)).to(self.placeholder.device)
+          print('ggd')
         x, _ = self.inverse(z, context=context)
         return x
+
