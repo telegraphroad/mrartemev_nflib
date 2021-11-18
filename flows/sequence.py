@@ -24,13 +24,13 @@ class InvertiblePermutation(nn.Module):
 class NormalizingFlowModel(nn.Module):
     """ A Normalizing Flow Model is a (prior, flow) pair """
 
-    def __init__(self, prior,var, flows):
+    def __init__(self, prior,rep_sample, flows):
         super().__init__()
         self.register_buffer('placeholder', torch.randn(1))
         self.prior = prior
         self.flows = nn.ModuleList(flows)
         self._dim = None
-        self._var = var
+        self._rep_sample = rep_sample
 
     def forward(self, x, context=None):
         m, self._dim = x.shape
@@ -58,18 +58,20 @@ class NormalizingFlowModel(nn.Module):
 
     def sample(self, num_samples, context=None):
         if type(self.prior) == torch.distributions.multivariate_normal.MultivariateNormal:
-          if self._var:
+          if self._rep_sample:
             z = self.prior.rsample((num_samples,)).to(self.placeholder.device)
             print('RSAMPLE_________________________________')
           else:
             z = self.prior.sample((num_samples,)).to(self.placeholder.device)
+            print('SAMPLE++++++++++++++++++++++++++++++++++')
           #print('mvn')
         else:
-          if self._var:
+          if self._rep_sample:
             z = self.prior.rsample((num_samples,self._dim)).to(self.placeholder.device)
             print('RSAMPLE_________________________________')
           else:
             z = self.prior.sample((num_samples,self._dim)).to(self.placeholder.device)
+            print('SAMPLE++++++++++++++++++++++++++++++++++')
           #print('ggd')
         x, _ = self.inverse(z, context=context)
         return x
