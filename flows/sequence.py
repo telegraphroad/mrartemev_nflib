@@ -42,7 +42,8 @@ class NormalizingFlowModel(nn.Module):
         return z, prior_logprob, log_det
 
     def inverse(self, z, context=None):
-        print(z.shape)
+        if len(z.shape)>2:
+            z = z.squeeze()
         m, _ = z.shape
         log_det = torch.zeros(m, device=self.placeholder.device)
         for flow in self.flows[::-1]:
