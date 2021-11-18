@@ -208,7 +208,7 @@ class GenNormal(ExponentialFamily):
         sampled = binary_sample * torch.pow(torch.abs(gamma_sample), ipower)
         #print('sampled shape',sampled.shape)
         print(self.loc.item(),':::::',self.scale.item(),':::::',self.p.item())
-        return self.loc.to(device) + self.scale.to(device) * sampled.to(device)
+        return self.loc + self.scale * sampled
 
     def sample(self, sample_shape=torch.Size()):
         shape = self._extended_shape(sample_shape)
@@ -217,16 +217,16 @@ class GenNormal(ExponentialFamily):
             ipower = 1.0 / self.p
             ipower = ipower#.cpu()
             gamma_dist = torch.distributions.Gamma(ipower, 1.0)
-            gamma_sample = gamma_dist.sample(shape).to(device)#.cpu()
-            binary_sample = (torch.randint(low=0, high=2, size=shape, dtype=self.loc.dtype) * 2 - 1).to(device)
+            gamma_sample = gamma_dist.sample(shape)#.cpu()
+            binary_sample = (torch.randint(low=0, high=2, size=shape, dtype=self.loc.dtype) * 2 - 1)
             if (len(gamma_sample.shape) == len(binary_sample.shape) + 1) and gamma_sample.shape[-1]==gamma_sample.shape[-2]:
-              gamma_sample = gamma_dist.sample(shape[0:-1]).to(device)#.cpu()
+              gamma_sample = gamma_dist.sample(shape[0:-1])#.cpu()
               #print('=================================================================================================================')
             #print(binary_sample)
             #print(gamma_sample)
-            sampled = binary_sample.squeeze().to(device) * torch.pow(torch.abs(gamma_sample.to(device).squeeze()), torch.FloatTensor(ipower).to(device)).to(device)
+            sampled = binary_sample.squeeze() * torch.pow(torch.abs(gamma_sample.squeeze()), torch.FloatTensor(ipower))
             #print(self.loc.item(),':::::',self.scale.item(),':::::',self.p.item())
-            return self.loc.to(device)+ self.scale.to(device) * sampled.to(device)
+            return self.loc + self.scale * sampled
 
     def log_prob(self, value):
         if self._validate_args:
@@ -234,7 +234,7 @@ class GenNormal(ExponentialFamily):
         # compute the variance
         var = (self.scale ** 2)
         log_scale = math.log(self.scale) if isinstance(self.scale, Real) else self.scale.log()
-        return (-((value.to(device) - self.loc.to(device)) ** 2) / (2 * var.to(device)) - log_scale.to(device) - math.log(math.sqrt(2 * math.pi))).to(device)
+        return (-((value - self.loc) ** 2) / (2 * var) - log_scale - math.log(math.sqrt(2 * math.pi)))
 
 
     
