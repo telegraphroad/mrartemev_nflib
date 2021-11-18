@@ -31,6 +31,9 @@ class NormalizingFlowModel(nn.Module):
         self.flows = nn.ModuleList(flows)
         self._dim = None
         self._rep_sample = rep_sample
+        self.dist_p1 = None
+        self.dist_p2 = None
+        self.dist_p3 = None
 
     def forward(self, x, context=None):
         m, self._dim = x.shape
