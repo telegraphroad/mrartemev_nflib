@@ -56,10 +56,10 @@ class NormalizingFlowModel(nn.Module):
     def sample(self, num_samples, context=None):
         if type(self.prior) == torch.distributions.multivariate_normal.MultivariateNormal:
           z = self.prior.sample((num_samples,)).to(self.placeholder.device)
-          print('mvn')
+          #print('mvn')
         else:
           z = self.prior.sample((num_samples,self._dim)).to(self.placeholder.device)
-          print('ggd')
+          #print('ggd')
         x, _ = self.inverse(z, context=context)
         return x
 
