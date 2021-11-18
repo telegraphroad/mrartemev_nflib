@@ -63,18 +63,18 @@ class NormalizingFlowModel(nn.Module):
         if type(self.prior) == torch.distributions.multivariate_normal.MultivariateNormal:
           if self._rep_sample:
             z = self.prior.rsample((num_samples,)).to(self.placeholder.device)
-            print('RSAMPLE_________________________________')
+            
           else:
             z = self.prior.sample((num_samples,)).to(self.placeholder.device)
-            print('SAMPLE++++++++++++++++++++++++++++++++++')
+            
           #print('mvn')
         else:
           if self._rep_sample:
             z = self.prior.rsample((num_samples,self._dim)).to(self.placeholder.device)
-            print('RSAMPLE_________________________________')
+            
           else:
             z = self.prior.sample((num_samples,self._dim)).to(self.placeholder.device)
-            print('SAMPLE++++++++++++++++++++++++++++++++++')
+            
           #print('ggd')
         x, _ = self.inverse(z, context=context)
         return x
