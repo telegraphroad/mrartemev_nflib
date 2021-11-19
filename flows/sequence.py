@@ -227,7 +227,10 @@ class GenNormal(ExponentialFamily):
             print('gs',gamma_sample)
             print('ip',type(ipower))
             print(torch.FloatTensor(ipower))
-            sampled = binary_sample.squeeze() * torch.pow(torch.abs(gamma_sample.squeeze()), torch.FloatTensor(ipower))
+            if type(ipower) == torch.Tensor:
+              sampled = binary_sample.squeeze() * torch.pow(torch.abs(gamma_sample.squeeze()), ipower)
+            else:
+              sampled = binary_sample.squeeze() * torch.pow(torch.abs(gamma_sample.squeeze()), torch.FloatTensor(ipower))
             #print(self.loc.item(),':::::',self.scale.item(),':::::',self.p.item())
             return self.loc + self.scale * sampled
 
