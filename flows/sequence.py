@@ -223,8 +223,9 @@ class GenNormal(ExponentialFamily):
             if (len(gamma_sample.shape) == len(binary_sample.shape) + 1) and gamma_sample.shape[-1]==gamma_sample.shape[-2]:
               gamma_sample = gamma_dist.sample(shape[0:-1])#.cpu()
               #print('=================================================================================================================')
-            #print(binary_sample)
-            #print(gamma_sample)
+            print('bs',binary_sample)
+            print('gs',gamma_sample)
+            print('ip',ipower)
             sampled = binary_sample.squeeze() * torch.pow(torch.abs(gamma_sample.squeeze()), torch.FloatTensor(ipower))
             #print(self.loc.item(),':::::',self.scale.item(),':::::',self.p.item())
             return self.loc + self.scale * sampled
