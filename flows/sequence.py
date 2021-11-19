@@ -306,14 +306,14 @@ class NormalizingFlowModelMVN(nn.Module):
 
     def __init__(self,rep_sample, flows,loc,cov,dim):
         super().__init__()
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.register_buffer('placeholder', torch.randn(1))
         #self.prior = prior
         self.flows = nn.ModuleList(flows)
         self._dim = None
         self._rep_sample = rep_sample
-        self.loc = nn.Parameter(torch.zeros((dim))+loc).to(device)
-        self.cov = nn.Parameter(torch.eye((dim))+cov).to(device)
+        self.loc = nn.Parameter(torch.zeros((dim))+loc)
+        self.cov = nn.Parameter(torch.eye((dim))+cov)
         
         self.loc.requires_grad = True
         self.cov.requires_grad = True
@@ -323,11 +323,11 @@ class NormalizingFlowModelMVN(nn.Module):
         
     def forward(self, x, context=None):
         m, self._dim = x.shape
-        log_det = torch.zeros(m, device=self.placeholder.device)
+        log_det = torch.zeros(m, device=self.placeholder.device).to(device)
         for flow in self.flows:
             x, ld = flow.forward(x, context=context)
             log_det += ld
-        z, prior_logprob = x, self.prior.log_prob(x)
+        z, prior_logprob = x, self.prior.log_prob(x.to(self.device))
         return z, prior_logprob, log_det
 
     def inverse(self, z, context=None):
