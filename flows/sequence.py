@@ -858,7 +858,7 @@ class NormalizingFlowModelMVGGD(nn.Module):
         self.p.requires_grad = True
         
         mix = torch.distributions.Categorical(torch.ones(dim,).to(self.device))
-        comp = torch.distributions.GenNormal(self.loc, self.scale,self.p)
+        comp = GenNormal(self.loc, self.scale,self.p)
 
         self.prior = ReparametrizedMixtureSameFamily(mix, comp)
         
