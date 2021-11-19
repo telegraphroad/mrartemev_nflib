@@ -312,14 +312,14 @@ class NormalizingFlowModelMVN(nn.Module):
         self.flows = nn.ModuleList(flows)
         self._dim = None
         self._rep_sample = rep_sample
-        self.loc = nn.Parameter(torch.zeros((dim)).to(self.device)+loc)
-        self.cov = nn.Parameter(torch.eye((dim)).to(self.device)+cov)
+        self.loc = nn.Parameter(torch.zeros((dim))+loc)
+        self.cov = nn.Parameter(torch.eye((dim))+cov)
         
         self.loc.requires_grad = True
         self.cov.requires_grad = True
         
         
-        self.prior = MultivariateNormal(self.loc, self.cov)
+        self.prior = MultivariateNormal(self.loc.to(self.device), self.cov.to(self.device))
         
     def forward(self, x, context=None):
         m, self._dim = x.shape
