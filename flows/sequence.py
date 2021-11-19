@@ -251,7 +251,14 @@ class GenNormal(ExponentialFamily):
         return self.loc + self.scale * torch.erfinv(2 * value - 1) * math.sqrt(2)
 
     def entropy(self):
-        return 0.5 + 0.5 * math.log(2 * mat
+        return 0.5 + 0.5 * math.log(2 * math.pi) + torch.log(self.scale)
+
+    @property
+    def _natural_params(self):
+        return (self.loc / self.scale.pow(2), -0.5 * self.scale.pow(2).reciprocal())
+
+    def _log_normalizer(self, x, y):
+        return -0.25 * x.pow(2) / y + 0.5 * torch.log(-math.pi / y)
                                     
                                     
 class StableNormal(Normal):
