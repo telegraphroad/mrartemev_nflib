@@ -783,10 +783,11 @@ class NormalizingFlowModelMVN(nn.Module):
         self.flows = nn.ModuleList(flows)
         self._dim = None
         self._rep_sample = rep_sample
-        self.loc = nn.Parameter(loc)
-        self.scale = nn.Parameter(cov)
+        self.loc = nn.Parameter(torch.zeros(())+loc)
+        self.scale = nn.Parameter(torch.zeros(())+scale)
+        
         mix = torch.distributions.Categorical(torch.ones(dim,).to(device))
-        comp = torch.distributions.Normal(torch.zeros(dim,).to(device)+loc, torch.zeros(dim,).to(device)+scale)
+        comp = torch.distributions.Normal(self.loc, self.scale)
         
         self.loc.requires_grad = True
         self.scale.requires_grad = True
