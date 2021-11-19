@@ -304,7 +304,7 @@ class NormalizingFlowModelGGD(nn.Module):
 class NormalizingFlowModelMVN(nn.Module):
     """ A Normalizing Flow Model is a (prior, flow) pair """
 
-    def __init__(self,rep_sample, flows,loc,cov):
+    def __init__(self,rep_sample, flows,loc):
         super().__init__()
         self.register_buffer('placeholder', torch.randn(1))
         #self.prior = prior
@@ -312,7 +312,7 @@ class NormalizingFlowModelMVN(nn.Module):
         self._dim = None
         self._rep_sample = rep_sample
         self.loc = nn.Parameter(torch.zeros(())+loc)
-        self.cov = nn.Parameter(torch.eye(())+cov)
+        self.cov = nn.Parameter(torch.eye(()))
         
         self.loc.requires_grad = True
         self.cov.requires_grad = True
