@@ -312,8 +312,8 @@ class NormalizingFlowModelMVN(nn.Module):
         self.flows = nn.ModuleList(flows)
         self._dim = None
         self._rep_sample = rep_sample
-        self.loc = nn.Parameter(torch.zeros((dim))+loc)
-        self.cov = nn.Parameter(torch.eye((dim))+cov)
+        self.loc = nn.Parameter(loc)
+        self.cov = nn.Parameter(cov)
         
         self.loc.requires_grad = True
         self.cov.requires_grad = True
