@@ -319,7 +319,7 @@ class NormalizingFlowModelMVN(nn.Module):
         self.cov.requires_grad = True
         
         
-        self.prior = MultivariateNormal(self.loc.to(self.device), self.cov.to(self.device))
+        self.prior = MultivariateNormal(self.loc, self.cov)
         
     def forward(self, x, context=None):
         m, self._dim = x.shape
