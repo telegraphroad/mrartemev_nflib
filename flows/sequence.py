@@ -209,7 +209,7 @@ class GenNormal(ExponentialFamily):
         sampled = binary_sample * torch.pow(torch.abs(gamma_sample), ipower)
         #print('sampled shape',sampled.shape)
         print(self.loc.item(),':::::',self.scale.item(),':::::',self.p.item())
-        return self.loc.to(device) + self.scale.to(device) * sampled
+        return self.loc.to(device) + self.scale.to(device) * sampled.to(device)
 
     def sample(self, sample_shape=torch.Size()):
         shape = self._extended_shape(sample_shape)
