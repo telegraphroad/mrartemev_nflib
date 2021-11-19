@@ -189,6 +189,7 @@ class GenNormal(ExponentialFamily):
         new._validate_args = self._validate_args
         return new
     def rsample(self, sample_shape=torch.Size()):
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         shape = self._extended_shape(sample_shape)
         #print('sample shape',sample_shape)
         #print('shape',shape)
@@ -208,7 +209,7 @@ class GenNormal(ExponentialFamily):
         sampled = binary_sample * torch.pow(torch.abs(gamma_sample), ipower)
         #print('sampled shape',sampled.shape)
         print(self.loc.item(),':::::',self.scale.item(),':::::',self.p.item())
-        return self.loc + self.scale * sampled
+        return self.loc.to(device) + self.scale.to(device) * sampled
 
     def sample(self, sample_shape=torch.Size()):
         shape = self._extended_shape(sample_shape)
