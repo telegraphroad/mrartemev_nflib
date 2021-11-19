@@ -783,8 +783,8 @@ class NormalizingFlowModelMVN(nn.Module):
         self.flows = nn.ModuleList(flows)
         self._dim = None
         self._rep_sample = rep_sample
-        self.loc = nn.Parameter(torch.zeros(())+loc)
-        self.scale = nn.Parameter(torch.zeros(())+scale)
+        self.loc = nn.Parameter(torch.zeros((dim))+loc)
+        self.scale = nn.Parameter(torch.zeros((dim))+scale)
         
         mix = torch.distributions.Categorical(torch.ones(dim,).to(self.device))
         comp = torch.distributions.Normal(self.loc, self.scale)
