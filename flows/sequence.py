@@ -252,6 +252,8 @@ class GenNormal(ExponentialFamily):
 
     def entropy(self):
         return 0.5 + 0.5 * math.log(2 * mat
+                                    
+                                    
 class StableNormal(Normal):
     """
     Add stable cdf for implicit reparametrization, and stable _log_cdf.
