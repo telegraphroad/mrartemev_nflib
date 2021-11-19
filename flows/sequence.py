@@ -655,8 +655,11 @@ class ReparametrizedMixtureSameFamily(MixtureSameFamily):
         # Obtain factorized components distribution and assert that it's
         # a scalar distribution.
         if isinstance(self._component_distribution, tdistr.Independent):
+            print('self._component_distribution',self._component_distribution)
+            print('self._component_distribution.base_dist',self._component_distribution.base_dist)
             univariate_components = self._component_distribution.base_dist
         else:
+            print('00self._component_distribution',self._component_distribution)
             univariate_components = self._component_distribution
 
         # Expand input tensor and compute log-probs in each component
