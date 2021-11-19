@@ -839,3 +839,70 @@ class NormalizingFlowModelMVN(nn.Module):
         x, _ = self.inverse(z, context=context)
         return x
 
+class NormalizingFlowModelMVGGD(nn.Module):
+    """ A Normalizing Flow Model is a (prior, flow) pair """
+
+    def __init__(self,rep_sample, flows,loc,scale,p,dim):
+        super().__init__()
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.register_buffer('placeholder', torch.randn(1))
+        #self.prior = prior
+        self.flows = nn.ModuleList(flows)
+        self._dim = None
+        self._rep_sample = rep_sample
+        self.loc = nn.Parameter(torch.zeros((dim))+loc)
+        self.scale = nn.Parameter(torch.zeros((dim))+scale)
+        self.p = nn.Parameter(torch.zeros((dim))+p)
+        self.loc.requires_grad = True
+        self.scale.requires_grad = True
+        self.p.requires_grad = True
+        
+        mix = torch.distributions.Categorical(torch.ones(dim,).to(self.device))
+        comp = torch.distributions.GenNormal(self.loc, self.scale,self.p)
+
+        self.prior = ReparametrizedMixtureSameFamily(mix, comp)
+        
+    def forward(self, x, context=None):
+        m, self._dim = x.shape
+        log_det = torch.zeros(m, device=self.placeholder.device).to(self.device)
+        for flow in self.flows:
+            x, ld = flow.forward(x, context=context)
+            log_det += ld
+        z, prior_logprob = x.to(self.device), self.prior.log_prob(x.to(self.device))
+        return z, prior_logprob, log_det
+
+    def inverse(self, z, context=None):
+        if len(z.shape)>2:
+            z = z.squeeze()
+        m, _ = z.shape
+        log_det = torch.zeros(m, device=self.placeholder.device)
+        for flow in self.flows[::-1]:
+            z, ld = flow.inverse(z, context=context)
+            log_det += ld
+        x = z
+        return x, log_det
+
+    def log_prob(self, x):
+        _, prior_logprob, log_det = self.forward(x)
+        return prior_logprob + log_det
+
+    def sample(self, num_samples, context=None):
+        if type(self.prior) == torch.distributions.multivariate_normal.MultivariateNormal:
+          if self._rep_sample:
+            z = self.prior.rsample((num_samples,)).to(self.placeholder.device)
+            
+          else:
+            z = self.prior.sample((num_samples,)).to(self.placeholder.device)
+            
+          #print('mvn')
+        else:
+          if self._rep_sample:
+            z = self.prior.rsample((num_samples,self._dim)).to(self.placeholder.device)
+            
+          else:
+            z = self.prior.sample((num_samples,self._dim)).to(self.placeholder.device)
+            
+          #print('ggd')
+        x, _ = self.inverse(z, context=context)
+        return x
+
