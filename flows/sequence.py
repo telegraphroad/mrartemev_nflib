@@ -323,7 +323,7 @@ class NormalizingFlowModelMVN(nn.Module):
         
     def forward(self, x, context=None):
         m, self._dim = x.shape
-        log_det = torch.zeros(m, device=self.placeholder.device).to(device)
+        log_det = torch.zeros(m, device=self.placeholder.device).to(self.device)
         for flow in self.flows:
             x, ld = flow.forward(x, context=context)
             log_det += ld
