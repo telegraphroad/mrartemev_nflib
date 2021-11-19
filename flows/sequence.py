@@ -327,7 +327,7 @@ class NormalizingFlowModelMVN(nn.Module):
         for flow in self.flows:
             x, ld = flow.forward(x, context=context)
             log_det += ld
-        z, prior_logprob = x, self.prior.log_prob(x.to(self.device))
+        z, prior_logprob = x.to(self.device), self.prior.log_prob(x.to(self.device))
         return z, prior_logprob, log_det
 
     def inverse(self, z, context=None):
