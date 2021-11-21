@@ -115,7 +115,7 @@ class NormalizingFlowModel(nn.Module):
 
     def log_prob(self, x):
         _, prior_logprob, log_det = self.forward(x)
-        if len(logp.shape)>1:
+        if len(prior_logprob.shape)>1:
             logp = torch.sum(logp,axis=1)#mean!
 
         return prior_logprob + log_det
@@ -776,7 +776,7 @@ class NormalizingFlowModelGGD(nn.Module):
 
     def log_prob(self, x):
         _, prior_logprob, log_det = self.forward(x)
-        if len(logp.shape)>1:
+        if len(prior_logprob.shape)>1:
             logp = torch.sum(logp,axis=1)#mean!
         
         return prior_logprob + log_det
@@ -846,7 +846,7 @@ class NormalizingFlowModelMVN(nn.Module):
 
     def log_prob(self, x):
         _, prior_logprob, log_det = self.forward(x)
-        if len(logp.shape)>1:
+        if len(prior_logprob.shape)>1:
             logp = torch.sum(logp,axis=1)#mean!
         
         return prior_logprob + log_det
@@ -916,7 +916,7 @@ class NormalizingFlowModelMVGGD(nn.Module):
 
     def log_prob(self, x):
         _, prior_logprob, log_det = self.forward(x)
-        if len(logp.shape)>1:
+        if len(prior_logprob.shape)>1:
             logp = torch.sum(logp,axis=1)#mean!
         
         return prior_logprob + log_det
