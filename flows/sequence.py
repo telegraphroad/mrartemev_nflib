@@ -757,7 +757,7 @@ class NormalizingFlowModelGGD(nn.Module):
     def forward(self, x, context=None):
         m, self._dim = x.shape
         log_det = torch.zeros(m, device=self.placeholder.device)
-        print('xshape',x.shape)
+        
         for flow in self.flows:
             x, ld = flow.forward(x, context=context)
             log_det += ld
