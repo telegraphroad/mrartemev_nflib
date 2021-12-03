@@ -116,7 +116,7 @@ class NormalizingFlowModel(nn.Module):
     def log_prob(self, x):
         _, prior_logprob, log_det = self.forward(x)
         if len(prior_logprob.shape)>1:
-            prior_logprob = torch.sum(prior_logprob,axis=1)#mean!
+            prior_logprob = torch.mean(prior_logprob,axis=1)
 
         return prior_logprob + log_det
 
