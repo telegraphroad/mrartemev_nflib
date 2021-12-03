@@ -919,7 +919,7 @@ class NormalizingFlowModelTMVN(nn.Module):
         self.scale.requires_grad = True
         
         
-        self.prior = MultivariateNormal(self.loc, self.scale).to(self.device) #ReparametrizedMixtureSameFamily(mix, comp)
+        self.prior = MultivariateNormal(self.loc, self.scale) #ReparametrizedMixtureSameFamily(mix, comp)
         
     def forward(self, x, context=None):
         m, self._dim = x.shape
