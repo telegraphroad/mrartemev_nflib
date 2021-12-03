@@ -912,14 +912,14 @@ class NormalizingFlowModelTMVN(nn.Module):
         self.flows = nn.ModuleList(flows)
         self._dim = None
         self._rep_sample = rep_sample
-        self.loc = nn.Parameter(torch.zeros((dim))+loc)
-        self.scale = nn.Parameter(torch.eye((dim))+scale)
+        self.loc = nn.Parameter(torch.zeros((dim)).to(device)+loc).to(device)
+        self.scale = nn.Parameter(torch.eye((dim)).to(device)+scale).to(device)
                 
         self.loc.requires_grad = True
         self.scale.requires_grad = True
         
         
-        self.prior = MultivariateNormal(self.loc, self.scale) #ReparametrizedMixtureSameFamily(mix, comp)
+        self.prior = MultivariateNormal(self.loc, self.scale).to(device) #ReparametrizedMixtureSameFamily(mix, comp)
         
     def forward(self, x, context=None):
         m, self._dim = x.shape
