@@ -901,6 +901,78 @@ class NormalizingFlowModelMVN(nn.Module):
         x, _ = self.inverse(z, context=context)
         return x
 
+class NormalizingFlowModelTMVN(nn.Module):
+    """ A Normalizing Flow Model is a (prior, flow) pair """
+
+    def __init__(self,rep_sample, flows,loc,scale,dim):
+        super().__init__()
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.register_buffer('placeholder', torch.randn(1))
+        #self.prior = prior
+        self.flows = nn.ModuleList(flows)
+        self._dim = None
+        self._rep_sample = rep_sample
+        self.loc = nn.Parameter(torch.zeros((dim))+loc)
+        self.scale = nn.Parameter(torch.eye((dim))+scale)
+                
+        self.loc.requires_grad = True
+        self.scale.requires_grad = True
+        
+        
+        self.prior = MultivariateNormal(self.loc, self.scale) #ReparametrizedMixtureSameFamily(mix, comp)
+        
+    def forward(self, x, context=None):
+        m, self._dim = x.shape
+        log_det = torch.zeros(m, device=self.placeholder.device).to(self.device)
+        for flow in self.flows:
+            x, ld = flow.forward(x, context=context)
+            log_det += ld
+        z, prior_logprob = x.to(self.device), self.prior.log_prob(x.to(self.device))
+        return z, prior_logprob, log_det
+
+    def inverse(self, z, context=None):
+        if len(z.shape)>2:
+            z = z.squeeze()
+        m, _ = z.shape
+        log_det = torch.zeros(m, device=self.placeholder.device)
+        for flow in self.flows[::-1]:
+            z, ld = flow.inverse(z, context=context)
+            log_det += ld
+        x = z
+        return x, log_det
+
+    def log_prob(self, x):
+        _, prior_logprob, log_det = self.forward(x)
+        #print('plogprob',prior_logprob.max())
+        #print('logdet',log_det.max())
+        
+        if len(prior_logprob.shape)>1:
+            prior_logprob = torch.mean(prior_logprob,axis=1)#mean!
+        print('TMVNPRIOR',self.prior)
+        print('TMVNPLOGPROB',prior_logprob)
+        print('TMVNLOGDET',log_det)        
+        return prior_logprob + log_det
+
+    def sample(self, num_samples, context=None):
+        if type(self.prior) == torch.distributions.multivariate_normal.MultivariateNormal:
+          if self._rep_sample:
+            z = self.prior.rsample((num_samples,)).to(self.placeholder.device)
+            
+          else:
+            z = self.prior.sample((num_samples,)).to(self.placeholder.device)
+            
+          #print('mvn')
+        else:
+          if self._rep_sample:
+            z = self.prior.rsample((num_samples,self._dim)).to(self.placeholder.device)
+            
+          else:
+            z = self.prior.sample((num_samples,self._dim)).to(self.placeholder.device)
+            
+          #print('ggd')
+        x, _ = self.inverse(z, context=context)
+        return x
+
 class NormalizingFlowModelMVGGD(nn.Module):
     """ A Normalizing Flow Model is a (prior, flow) pair """
 
