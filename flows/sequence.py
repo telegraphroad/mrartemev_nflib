@@ -775,7 +775,8 @@ class NormalizingFlowModelGGD(nn.Module):
         #print('forwardlogdet',log_det)
         
         z, prior_logprob = x, self.prior.log_prob(x)
-        #print('priorlprob',prior_logprob)
+        print('prior',self.prior)
+        print('priorlpmax',prior_logprob.max())
         return z, prior_logprob, log_det
 
     def inverse(self, z, context=None):
@@ -791,8 +792,8 @@ class NormalizingFlowModelGGD(nn.Module):
 
     def log_prob(self, x):
         _, prior_logprob, log_det = self.forward(x)
-        #print('plogprob',prior_logprob.max())
-        #print('logdet',log_det.max())
+        print('plogprob',prior_logprob.max())
+        print('logdet',log_det.max())
         #print('fmax',prior_logprob.mean().max())
         #print('smean1',logmeanexp(prior_logprob,1).sum(),logmeanexp(prior_logprob,1).shape)
         #print('smax1',torch.logsumexp(prior_logprob,1).sum(),torch.logsumexp(prior_logprob,1).shape)        
