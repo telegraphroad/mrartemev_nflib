@@ -64,6 +64,15 @@ from torch.distributions import MultivariateNormal
 
 logger = logging.getLogger('main.nflib.flows.SequenceFlows')
 
+def logmeanexp(x, dim=None, keepdim=False):
+    """Stable computation of log(mean(exp(x))"""
+
+    
+    if dim is None:
+        x, dim = x.view(-1), 0
+    x_max, _ = torch.max(x, dim, keepdim=True)
+    x = x_max + torch.log(torch.mean(torch.exp(x - x_max), dim, keepdim=True))
+    return x if keepdim else x.squeeze(dim)
 
 class InvertiblePermutation(nn.Module):
     # @robdrynkin
@@ -785,7 +794,10 @@ class NormalizingFlowModelGGD(nn.Module):
         #print('plogprob',prior_logprob.max())
         #print('logdet',log_det.max())
         print('fmax',prior_logprob.mean().max())
-        print('smax1',torch.logsumexp(prior_logprob,0).max())        
+        print('smax0',torch.logsumexp(prior_logprob,0).max())        
+        print('smean0',torch.logmeanexp(prior_logprob,0).max())
+        print('smean1',torch.logmeanexp(prior_logprob,1).max())
+        print('smax1',torch.logsumexp(prior_logprob,1).max())        
 
         if len(prior_logprob.shape)>1:
             prior_logprob = torch.mean(prior_logprob,axis=1)#mean!
