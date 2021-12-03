@@ -876,7 +876,9 @@ class NormalizingFlowModelMVN(nn.Module):
         
         if len(prior_logprob.shape)>1:
             prior_logprob = torch.mean(prior_logprob,axis=1)#mean!
-        
+        print('MVNPRIOR',self.prior)
+        print('MVNPLOGPROB',prior_logprob)
+        print('MVNLOGDET',log_det)        
         return prior_logprob + log_det
 
     def sample(self, num_samples, context=None):
