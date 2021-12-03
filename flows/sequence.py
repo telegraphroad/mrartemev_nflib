@@ -927,6 +927,7 @@ class NormalizingFlowModelTMVN(nn.Module):
         for flow in self.flows:
             x, ld = flow.forward(x, context=context)
             log_det += ld
+        print('++++++++++++++',self.prior,x)
         print('==============',self.prior,self.prior.log_prob(x.to(self.device)))
         
         z, prior_logprob = x.to(self.device), self.prior.log_prob(x.to(self.device))
@@ -950,6 +951,7 @@ class NormalizingFlowModelTMVN(nn.Module):
         
         if len(prior_logprob.shape)>1:
             prior_logprob = torch.mean(prior_logprob,axis=1)#mean!
+            print('*********************************************')
         print('TMVNPRIOR',self.prior)
         print('TMVNPLOGPROB',prior_logprob.min(),prior_logprob.max())
         print('TMVNLOGDET',log_det.min(),log_det.max())        
