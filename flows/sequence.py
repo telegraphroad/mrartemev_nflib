@@ -794,10 +794,10 @@ class NormalizingFlowModelGGD(nn.Module):
         #print('plogprob',prior_logprob.max())
         #print('logdet',log_det.max())
         print('fmax',prior_logprob.mean().max())
-        print('smax0',torch.logsumexp(prior_logprob,0).max(),torch.logsumexp(prior_logprob,0).shape)        
-        print('smean0',logmeanexp(prior_logprob,0).max(),logmeanexp(prior_logprob,0).shape)
-        print('smean1',logmeanexp(prior_logprob,1).max(),logmeanexp(prior_logprob,1).shape)
-        print('smax1',torch.logsumexp(prior_logprob,1).max(),torch.logsumexp(prior_logprob,1).shape)        
+        print('smax0',torch.logsumexp(prior_logprob,0).sum(),torch.logsumexp(prior_logprob,0).shape)        
+        print('smean0',logmeanexp(prior_logprob,0).sum(),logmeanexp(prior_logprob,0).shape)
+        print('smean1',logmeanexp(prior_logprob,1).sum(),logmeanexp(prior_logprob,1).shape)
+        print('smax1',torch.logsumexp(prior_logprob,1).sum(),torch.logsumexp(prior_logprob,1).shape)        
 
         if len(prior_logprob.shape)>1:
             prior_logprob = torch.mean(prior_logprob,axis=1)#mean!
