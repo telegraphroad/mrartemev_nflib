@@ -124,8 +124,6 @@ class NormalizingFlowModel(nn.Module):
 
     def log_prob(self, x):
         _, prior_logprob, log_det = self.forward(x)
-        #print('plogprob',prior_logprob.max())
-        #print('logdet',log_det.max())
         if len(prior_logprob.shape)>1:
             prior_logprob = torch.mean(prior_logprob,axis=1)
 
@@ -139,7 +137,7 @@ class NormalizingFlowModel(nn.Module):
           else:
             z = self.prior.sample((num_samples,)).to(self.placeholder.device)
             
-          #print('mvn')
+          
         else:
           if self._rep_sample:
             z = self.prior.rsample((num_samples,self._dim)).to(self.placeholder.device)
@@ -147,7 +145,7 @@ class NormalizingFlowModel(nn.Module):
           else:
             z = self.prior.sample((num_samples,self._dim)).to(self.placeholder.device)
             
-          #print('ggd')
+          
         x, _ = self.inverse(z, context=context)
         return x
 
@@ -205,23 +203,21 @@ class GenNormal(ExponentialFamily):
     def rsample(self, sample_shape=torch.Size()):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         shape = self._extended_shape(sample_shape)
-        #print('sample shape',sample_shape)
-        #print('shape',shape)
         ipower = 1.0 / self.p
         ipower = ipower.cpu()
         gamma_dist = torch.distributions.Gamma(ipower, 1.0)
         
         gamma_sample = gamma_dist.rsample(shape).cpu()
-        #print('gs shape',gamma_sample.shape)
+        
         binary_sample = torch.randint(low=0, high=2, size=shape, dtype=self.loc.dtype) * 2 - 1
-        #print('bs shape',binary_sample.shape)
+        
         
         if len(binary_sample.shape) ==  len(gamma_sample.shape) - 1:
             gamma_sample = gamma_sample.squeeze(len(gamma_sample.shape) - 1)
-            #print('bingo!')
-        #print('bs shape',binary_sample.shape)
+            
+        
         sampled = binary_sample * torch.pow(torch.abs(gamma_sample), ipower)
-        #print('sampled shape',sampled.shape)
+        
         print(self.loc.item(),':::::',self.scale.item(),':::::',self.p.item())
         return self.loc.to(device) + self.scale.to(device) * sampled.to(device)
 
@@ -236,11 +232,11 @@ class GenNormal(ExponentialFamily):
             binary_sample = (torch.randint(low=0, high=2, size=shape, dtype=self.loc.dtype) * 2 - 1)
             if (len(gamma_sample.shape) == len(binary_sample.shape) + 1) and gamma_sample.shape[-1]==gamma_sample.shape[-2]:
               gamma_sample = gamma_dist.sample(shape[0:-1])#.cpu()
-              #print('=================================================================================================================')
-#             print('bs',binary_sample)
-#             print('gs',gamma_sample)
-#             print('ip',type(ipower))
-#             print(torch.FloatTensor(ipower))
+              
+#             
+#             
+#             
+#             
             if type(ipower) == torch.Tensor:
               sampled = binary_sample.to(gamma_sample.device).squeeze() * torch.pow(torch.abs(gamma_sample.squeeze()).to(gamma_sample.device), ipower.to(gamma_sample.device))
             else:
@@ -775,8 +771,6 @@ class NormalizingFlowModelGGD(nn.Module):
         #print('forwardlogdet',log_det)
         
         z, prior_logprob = x, self.prior.log_prob(x)
-        print('prior',self.prior)
-        print('priorlpmax',prior_logprob.max())
         return z, prior_logprob, log_det
 
     def inverse(self, z, context=None):
@@ -792,18 +786,11 @@ class NormalizingFlowModelGGD(nn.Module):
 
     def log_prob(self, x):
         _, prior_logprob, log_det = self.forward(x)
-        print('plogprob',prior_logprob.max())
-        print('logdet',log_det.max())
-        #print('fmax',prior_logprob.mean().max())
-        #print('smean1',logmeanexp(prior_logprob,1).sum(),logmeanexp(prior_logprob,1).shape)
-        #print('smax1',torch.logsumexp(prior_logprob,1).sum(),torch.logsumexp(prior_logprob,1).shape)        
         
         
         if len(prior_logprob.shape)>1:
             prior_logprob = torch.mean(prior_logprob,axis=1)#mean!
             
-        print('PLOGPROB',prior_logprob)
-        print('LOGDET',log_det)
         return prior_logprob + log_det
 
     def sample(self, num_samples, context=None):
@@ -876,9 +863,6 @@ class NormalizingFlowModelMVN(nn.Module):
         
         if len(prior_logprob.shape)>1:
             prior_logprob = torch.mean(prior_logprob,axis=1)#mean!
-        print('MVNPRIOR',self.prior)
-        print('MVNPLOGPROB',prior_logprob)
-        print('MVNLOGDET',log_det)        
         return prior_logprob + log_det
 
     def sample(self, num_samples, context=None):
@@ -927,8 +911,6 @@ class NormalizingFlowModelTMVN(nn.Module):
         for flow in self.flows:
             x, ld = flow.forward(x, context=context)
             log_det += ld
-        print('++++++++++++++',self.prior,x)
-        print('==============',self.prior,self.prior.log_prob(x.to(self.device)))
         
         z, prior_logprob = x.to(self.device), self.prior.log_prob(x.to(self.device))
         return z, prior_logprob, log_det
@@ -946,15 +928,10 @@ class NormalizingFlowModelTMVN(nn.Module):
 
     def log_prob(self, x):
         _, prior_logprob, log_det = self.forward(x)
-        #print('plogprob',prior_logprob.max())
-        #print('logdet',log_det.max())
         
         if len(prior_logprob.shape)>1:
             prior_logprob = torch.mean(prior_logprob,axis=1)#mean!
             print('*********************************************')
-        print('TMVNPRIOR',self.prior)
-        print('TMVNPLOGPROB',prior_logprob.min(),prior_logprob.max())
-        print('TMVNLOGDET',log_det.min(),log_det.max())        
         return prior_logprob + log_det
 
     def sample(self, num_samples, context=None):
