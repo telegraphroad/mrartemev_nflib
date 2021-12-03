@@ -115,8 +115,8 @@ class NormalizingFlowModel(nn.Module):
 
     def log_prob(self, x):
         _, prior_logprob, log_det = self.forward(x)
-        print('plogprob',prior_logprob)
-        print('logdet',log_det)
+        print('plogprob',prior_logprob.max())
+        print('logdet',log_det.max())
         if len(prior_logprob.shape)>1:
             prior_logprob = torch.mean(prior_logprob,axis=1)
 
@@ -779,8 +779,8 @@ class NormalizingFlowModelGGD(nn.Module):
 
     def log_prob(self, x):
         _, prior_logprob, log_det = self.forward(x)
-        print('plogprob',prior_logprob)
-        print('logdet',log_det)
+        print('plogprob',prior_logprob.max())
+        print('logdet',log_det.max())
 
         if len(prior_logprob.shape)>1:
             prior_logprob = torch.mean(prior_logprob,axis=1)#mean!
@@ -852,8 +852,8 @@ class NormalizingFlowModelMVN(nn.Module):
 
     def log_prob(self, x):
         _, prior_logprob, log_det = self.forward(x)
-        print('plogprob',prior_logprob)
-        print('logdet',log_det)
+        print('plogprob',prior_logprob.max())
+        print('logdet',log_det.max())
         
         if len(prior_logprob.shape)>1:
             prior_logprob = torch.mean(prior_logprob,axis=1)#mean!
@@ -925,8 +925,8 @@ class NormalizingFlowModelMVGGD(nn.Module):
 
     def log_prob(self, x):
         _, prior_logprob, log_det = self.forward(x)
-        print('plogprob',prior_logprob)
-        print('logdet',log_det)
+        print('plogprob',prior_logprob.max())
+        print('logdet',log_det.max())
         
         if len(prior_logprob.shape)>1:
             prior_logprob = torch.mean(prior_logprob,axis=1)#mean!
